@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>內在風景｜心理測驗</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5f3ef;color:#292724;font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif}
+.app{min-height:100vh;display:flex;justify-content:center;align-items:center;padding:18px}
+.card{width:min(920px,100%);min-height:680px;background:#fff;border-radius:24px;padding:42px;box-shadow:0 14px 45px rgba(0,0,0,.08)}
+.page{display:none;min-height:590px} .page.active{display:flex;flex-direction:column}
+.eyebrow{font-size:12px;letter-spacing:3px;color:#8a8379;margin-bottom:12px}
+h1{font-size:36px;margin:0 0 14px} h2{font-size:27px;margin:0 0 15px}
+p{line-height:1.9} .intro{color:#716b63;max-width:700px}
+.field{margin-top:26px} label{display:block;font-weight:600;margin-bottom:9px}
+input{width:100%;padding:15px;border:1px solid #ddd7cf;border-radius:12px;font-size:16px;background:#fcfbf9}
+input:focus{outline:none;border-color:#8f887f}
+.tip,.privacy{font-size:13px;color:#837c73;line-height:1.7}
+.bottom{margin-top:auto;padding-top:25px;display:flex;justify-content:flex-end;gap:10px}
+button{border:0;border-radius:12px;padding:14px 22px;background:#292724;color:white;font-size:15px;cursor:pointer}
+button.secondary{background:#eeeae4;color:#39352f}
+button:hover{opacity:.9}
+.progress{height:5px;background:#ebe7e0;border-radius:99px;margin:18px 0 22px}
+.progressbar{height:100%;background:#292724;border-radius:99px;width:0}
+.question-wrap{overflow:auto;flex:1;padding-right:3px}
+.question{padding:18px 0 22px;border-bottom:1px solid #eeeae4}
+.q-title{font-weight:650;font-size:17px;line-height:1.65;margin-bottom:12px}
+.options{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.option{text-align:left;background:#faf9f7;color:#39352f;border:1px solid #e1ddd6;padding:13px;border-radius:11px;line-height:1.5}
+.option.selected{background:#292724;color:#fff;border-color:#292724}
+.option span{display:inline-block;width:25px;font-weight:700}
+.codebox{background:#f7f5f1;border-radius:18px;padding:25px;text-align:center;margin:28px 0}
+.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(16px,3vw,25px);letter-spacing:1px;word-break:break-all;background:#fff;padding:17px;border-radius:12px;border:1px dashed #bbb3a8}
+.notice{background:#f5f1ea;border-left:4px solid #8b8277;padding:15px 17px;margin-top:18px;border-radius:8px;color:#575149}
+.error{color:#9d3d37;font-size:14px;margin-top:10px;display:none}
+@media(max-width:700px){.app{padding:8px}.card{padding:27px 19px;min-height:760px;border-radius:18px}h1{font-size:30px}.options{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app"><div class="card">
+
+<section id="intro" class="page active">
+  <div>
+    <div class="eyebrow">INNER LANDSCAPE</div>
+    <h1>內在風景</h1>
+    <p class="intro">這是一份以抽象情境、空間、顏色與直覺選擇為核心的心理探索測驗。請依照第一直覺回答，不需要思考哪個答案比較「好」。</p>
+    <div class="field"><label>姓名</label><input id="name" type="text" placeholder="請輸入姓名"></div>
+    <div class="field"><label>生日</label><input id="birthday" type="date"></div>
+    <p class="privacy">姓名與生日會被編入測驗代碼，方便之後由分析者辨識結果。網站本身不會進行人格判讀。</p>
+    <div id="introError" class="error">請填寫姓名與生日。</div>
+  </div>
+  <div class="bottom"><button onclick="start()">下一頁</button></div>
+</section>
+
+<section id="test" class="page">
+  <div>
+    <div class="eyebrow">30 QUESTIONS</div>
+    <h2>請依第一直覺回答</h2>
+    <div class="progress"><div id="progressbar" class="progressbar"></div></div>
+  </div>
+  <div id="questions" class="question-wrap"></div>
+  <div class="bottom">
+    <button class="secondary" onclick="show('intro')">上一頁</button>
+    <button onclick="finish()">完成測驗</button>
+  </div>
+</section>
+
+<section id="done" class="page">
+  <div>
+    <div class="eyebrow">COMPLETED</div>
+    <h2>測驗完成</h2>
+    <p class="intro">以下是你的測驗代碼。請完整複製這串代碼，傳給測驗分析者。這份網站不會自行判讀人格。</p>
+    <div class="codebox">
+      <div id="code" class="code"></div>
+      <div class="bottom" style="justify-content:center"><button onclick="copyCode()">複製測驗代碼</button></div>
+    </div>
+    <div class="notice">
+      <strong>請注意</strong><br>
+      請不要修改、刪除或重新排列代碼中的任何字元。若要重新測驗，請重新整理頁面後再次填答。
+    </div>
+    <p id="copyStatus" class="tip"></p>
+  </div>
+</section>
+
+</div></div>
+
+<script>
+const questions = [
+  ["如果你要用一種顏色代表「家」，你會選：",["紅色","藍色","黃色","綠色","白色","黑色","紫色","灰色"]],
+  ["你走進一棟陌生的房子，第一眼最想去的地方是：",["客廳","廚房","臥室","陽台","書房","地下室"]],
+  ["如果你的房間只能有一扇窗戶，你希望它：",["很大，可以看到整片天空","中等大小，剛好能看到外面","很小，只能看到一點點","沒有窗戶，但房間很安全","落地窗，可以直接通往外面"]],
+  ["你在森林裡看到一棟房子，你覺得最舒服的是：",["燈全部亮著","只有一盞燈亮著","完全沒有燈","門是開著的","門是關著的"]],
+  ["如果你可以帶一樣東西進入一個完全空白的房間，你會帶：",["一張床","一張桌子","一面鏡子","一盞燈","一盆植物","一張照片"]],
+  ["你坐在一間咖啡廳裡，另一個人進來後坐下。你最舒服的距離是：",["坐在你旁邊","坐在你斜對面","坐在你正對面","坐在房間另一端","坐在看得到但聽不到的地方"]],
+  ["有一座橋連接兩座島，你最想走：",["很寬、很多人的橋","普通大小、只有少數人的橋","很窄、幾乎沒有人的橋","透明的橋","看不到另一端的橋"]],
+  ["你收到一個包裹，但不知道是誰寄的。你會：",["立刻拆開","先看看寄件資訊","放一陣子再拆","找人陪你一起拆","不太想拆"]],
+  ["有一個人站在遠處看著你。你第一個反應比較接近：",["想知道他是誰","覺得有點奇怪","直接走過去問","假裝沒注意到","離開那個地方"]],
+  ["如果你必須和一個人共同生活，你最希望他：",["很了解你","很尊重你的空間","很照顧你","很有趣","很可靠","和你有很多共同興趣"]],
+  ["你走到一個岔路口，四條路分別是：有很多腳印、沒有任何腳印、有燈光、通往森林深處。你會選：",["有很多腳印的路","沒有腳印的路","有燈光的路","森林深處的路"]],
+  ["你發現一扇門，門上沒有任何標示。你會：",["直接打開","先敲門","先觀察周圍","找其他入口","先離開"]],
+  ["如果你可以看到未來的一件事情，你會想知道：",["未來的自己","未來的家庭","未來的工作","未來的感情","未來的財富","不想知道"]],
+  ["你在海邊看到四艘船，你最想搭：",["很大的客船","小型帆船","一艘沒有人的船","一艘看起來很舊的船","一艘目的地未知的船"]],
+  ["你發現一把鑰匙，但不知道它能打開什麼，你會：",["到處找鎖","把它收起來","直接拿去試最近的一扇門","研究鑰匙本身","把它交給別人"]],
+  ["如果有一面鏡子可以照出「真正的你」，你希望它呈現：",["現在的自己","小時候的自己","未來的自己","別人眼中的自己","你從來沒見過的自己"]],
+  ["你進入一個房間，牆上只有一幅畫。你最想看：",["一個人","一間房子","一片森林","一片海","一條路","一片空白"]],
+  ["如果你可以刪掉自己的一段記憶，你比較可能刪掉：",["最痛苦的一段","最尷尬的一段","最後悔的一段","最孤單的一段","最害怕的一段","不會刪任何一段"]],
+  ["你在一個完全陌生的城市待一天，晚上你最想：",["回到住宿的地方","找一間安靜的餐廳","去人很多的地方","到高處看城市","隨便走走","找一個人聊天"]],
+  ["如果你的人生是一個房間，你希望房間裡最明顯的是：",["一張很大的床","一張很大的桌子","一扇很大的窗戶","一個很大的書架","一面很大的鏡子","一扇通往外面的門"]],
+  ["你住進一間旅館，發現房門沒有鎖。你會：",["請櫃台處理","自己想辦法","覺得有點不舒服","覺得還好","直接換房間"]],
+  ["如果你必須在四個房間中選一間：A很小但非常安全、B很大但沒有門、C普通大小但有很多窗戶、D很暗但沒有人能進來。你選：",["很小，但非常安全","很大，但沒有門","普通大小，但有很多窗戶","很暗，但沒有人能進來"]],
+  ["你正在旅行，突然發現原本安排好的行程全部取消。你的第一反應：",["立刻重新安排","先看看發生什麼事","覺得有點煩，但接受","覺得反而很自由","找其他人決定"]],
+  ["如果你可以控制一件事情，你最想控制：",["時間","金錢","環境","別人的看法","自己的情緒","未來"]],
+  ["你看到一個箱子，上面寫著「請勿打開」。你的反應最接近：",["更想打開","有點好奇，但不會開","完全不會碰","先確認為什麼不能開","找別人打開"]],
+  ["如果你必須選一個地方住十年，你會選：",["海邊","山裡","市中心","小鎮","森林附近","一個沒有人認識你的地方"]],
+  ["你走在夜晚的街道上，看到遠方有一盞燈。你會：",["朝燈走去","繼續走自己的路","先觀察","覺得那盞燈讓你安心","覺得那盞燈有點可怕"]],
+  ["如果有一封信放在你家門口，信封上只有你的名字，你最想知道：",["是誰寫的","裡面寫了什麼","為什麼現在寄給你","寫信的人現在在哪裡","這封信會改變什麼"]],
+  ["你站在一片空曠的草地上，遠處有一個人、一棟房子、一棵大樹、一座山、一條河，或什麼都沒有。你第一眼最注意：",["一個人","一棟房子","一棵大樹","一座山","一條河","什麼都沒有"]],
+  ["你走到一扇門前，門後面可能是任何東西。你希望門後面是：",["一個你熟悉的人","一個新的地方","一個你一直想要的東西","一個你從未想過的世界","一個完全安靜的空間","一個出口"]]
+];
+
+let answers=Array(30).fill(null);
+let user={name:"",birthday:""};
+let generatedCode="";
+
+function show(id){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+function start(){
+  const name=document.getElementById("name").value.trim();
+  const birthday=document.getElementById("birthday").value;
+  if(!name||!birthday){document.getElementById("introError").style.display="block";return;}
+  document.getElementById("introError").style.display="none";
+  user={name,birthday};
+  render();
+  show("test");
+}
+
+function render(){
+  const wrap=document.getElementById("questions");
+  wrap.innerHTML="";
+  questions.forEach((q,i)=>{
+    const box=document.createElement("div");box.className="question";
+    const title=document.createElement("div");title.className="q-title";
+    title.textContent=(i+1)+". "+q[0];box.appendChild(title);
+    const opts=document.createElement("div");opts.className="options";
+    q[1].forEach((text,j)=>{
+      const b=document.createElement("button");b.type="button";b.className="option";
+      b.innerHTML="<span>"+String.fromCharCode(65+j)+"</span>"+escapeHtml(text);
+      if(answers[i]===j)b.classList.add("selected");
+      b.onclick=()=>{answers[i]=j;render();};
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);wrap.appendChild(box);
+  });
+  const done=answers.filter(x=>x!==null).length;
+  document.getElementById("progressbar").style.width=(done/30*100)+"%";
+}
+
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+
+async function sha256(text){
+  const data=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest("SHA-256",data);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+function encodePayload(payload){
+  const json=JSON.stringify(payload);
+  const bytes=new TextEncoder().encode(json);
+  let binary="";
+  bytes.forEach(b=>binary+=String.fromCharCode(b));
+  return btoa(binary).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
+}
+
+async function finish(){
+  const missing=answers.findIndex(x=>x===null);
+  if(missing!==-1){
+    alert("還有第 "+(missing+1)+" 題尚未回答，請完成全部30題。");
+    document.querySelectorAll(".question")[missing]?.scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+
+  // 題目版本固定，確保之後 GPT 可以辨識同一套題庫。
+  const answerLetters=answers.map(x=>String.fromCharCode(65+x));
+  const payload={
+    v:"IL30-V1",
+    name:user.name,
+    birthday:user.birthday,
+    answers:answerLetters
+  };
+  const canonical=JSON.stringify(payload);
+  const checksum=(await sha256(canonical)).slice(0,10).toUpperCase();
+  const encoded=encodePayload(payload);
+
+  // 代碼包含版本、校驗碼與資料。GPT 可用它還原原始答案。
+  generatedCode="IL30-V1-"+checksum+"-"+encoded;
+  document.getElementById("code").textContent=generatedCode;
+  show("done");
+}
+
+async function copyCode(){
+  try{
+    await navigator.clipboard.writeText(generatedCode);
+    document.getElementById("copyStatus").textContent="已複製，可以直接貼給分析者。";
+  }catch(e){
+    document.getElementById("copyStatus").textContent="瀏覽器不允許自動複製，請手動選取上方代碼。";
+  }
+}
+</script>
+</body>
+</html>
